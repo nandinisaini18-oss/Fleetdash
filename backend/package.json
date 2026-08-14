@@ -1,0 +1,28 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nandinisaini18-oss/Fleetdash.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nandinisaini18-oss/Fleetdash/issues"
+  },
+  "homepage": "https://github.com/nandinisaini18-oss/Fleetdash#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookieparser": "^0.1.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.2"
+  }
+}
