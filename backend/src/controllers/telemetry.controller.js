@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import processTelemetry from "../services/telemetryWorker.service.js";
 import Vehicle from "../models/vehicle.model.js";
 import TelemetryBucket from "../models/telemetryBucket.model.js";
+import publishTelemetry from "../services/telemetryPublisher.service.js";
 
 export const ingestTelemetry = async (req, res, next) => {
     try {
@@ -90,6 +91,15 @@ export const ingestTelemetry = async (req, res, next) => {
                         lastTelemetryAt: telemetry.timestamp
                     }
                 );
+
+                await publishTelemetry({
+                    vehicleId: telemetry.vehicleId,
+                    timestamp: telemetry.timestamp,
+                    latitude: telemetry.latitude,
+                    longitude: telemetry.longitude,
+                    speed: telemetry.speed,
+                    heading: telemetry.heading
+                });
 
                 return res.status(201).json({
                     success: true,
