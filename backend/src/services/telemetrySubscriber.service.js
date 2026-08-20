@@ -1,4 +1,5 @@
 import redisSubscriber from "../config/redisSubscriber.js";
+import { getIO } from "./socket.service.js";
 
 const startTelemetrySubscriber = async () => {
 
@@ -8,12 +9,25 @@ const startTelemetrySubscriber = async () => {
 
     redisSubscriber.on("message", (channel, message) => {
 
-        if (channel === "telemetry") {
+        if (channel !== "telemetry") {
+            return;
+        }
 
+        try {
             const telemetry = JSON.parse(message);
 
             console.log("Telemetry received from Redis:");
             console.log(telemetry);
+
+            const io = getIO();
+
+            io.emit("telemetry", telemetry);
+
+        } catch (error) {
+            console.error(
+                "Failed to process Redis telemetry:",
+                error.message
+            );
         }
     });
 };
