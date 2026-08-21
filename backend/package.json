@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/nandinisaini18-oss/Fleetdash#readme",
   "dependencies": {
+    "@turf/turf": "^7.4.0",
     "bcrypt": "^6.0.0",
     "cookieparser": "^0.1.0",
     "dotenv": "^17.4.2",

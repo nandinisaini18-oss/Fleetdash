@@ -1,6 +1,5 @@
 import { Worker } from "worker_threads";
 import mongoose from "mongoose";
-import processTelemetry from "../services/telemetryWorker.service.js";
 import Vehicle from "../models/vehicle.model.js";
 import TelemetryBucket from "../models/telemetryBucket.model.js";
 import publishTelemetry from "../services/telemetryPublisher.service.js";
@@ -127,6 +126,41 @@ export const ingestTelemetry = async (req, res, next) => {
                     `Telemetry worker stopped with exit code ${code}`
                 );
             }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getVehicleTelemetry = async (req, res, next) => {
+    try {
+        const { vehicleId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(vehicleId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid vehicle ID"
+            });
+        }
+
+        const vehicle = await Vehicle.findById(vehicleId);
+
+        if (!vehicle) {
+            return res.status(404).json({
+                success: false,
+                message: "Vehicle not found"
+            });
+        }
+
+        const buckets = await TelemetryBucket.find({
+            vehicleId
+        }).sort({ bucketStart: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: buckets.length,
+            data: buckets
         });
 
     } catch (error) {

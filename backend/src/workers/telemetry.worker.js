@@ -21,12 +21,12 @@ try {
         throw new Error("Invalid telemetry data");
     }
 
-    // Calculate hourly bucket
     const bucketStart = new Date(parsedData.timestamp);
 
     bucketStart.setMinutes(0, 0, 0);
 
     const bucketEnd = new Date(bucketStart);
+
     bucketEnd.setHours(bucketEnd.getHours() + 1);
 
     parentPort.postMessage({
@@ -39,8 +39,10 @@ try {
     });
 
 } catch (error) {
+
     parentPort.postMessage({
         success: false,
         message: error.message
     });
+
 }

@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 import http from "http";
-
 import app from "./src/app.js";
 import connectDB from "./src/database/db.js";
 import startTelemetrySubscriber from "./src/services/telemetrySubscriber.service.js";
@@ -31,4 +30,3 @@ const startServer = async () => {
 };
 
 startServer();
-await startTelemetrySubscriber();

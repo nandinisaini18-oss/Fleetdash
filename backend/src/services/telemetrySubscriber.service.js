@@ -14,6 +14,7 @@ const startTelemetrySubscriber = async () => {
         }
 
         try {
+
             const telemetry = JSON.parse(message);
 
             console.log("Telemetry received from Redis:");
@@ -24,12 +25,16 @@ const startTelemetrySubscriber = async () => {
             io.emit("telemetry", telemetry);
 
         } catch (error) {
+
             console.error(
                 "Failed to process Redis telemetry:",
                 error.message
             );
+
         }
+
     });
+
 };
 
 export default startTelemetrySubscriber;
