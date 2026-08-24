@@ -1,5 +1,5 @@
 import express from "express";
-
+import geofenceRoutes from "./routes/geofence.routes.js";
 import telemetryRoutes from "./routes/telemetry.routes.js";
 import vehicleRoutes from "./routes/vehicle.routes.js";
 import errorHandler from "./middlewares/errorHandler.js";
@@ -28,6 +28,11 @@ app.use(
 app.use(
     "/api/vehicles",
     vehicleRoutes
+);
+
+app.use(
+    "/api/geofences",
+    geofenceRoutes
 );
 
 // Global error handler

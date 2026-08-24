@@ -1,0 +1,286 @@
+# FleetDash — Backend
+
+## High-Throughput Event-Driven Fleet Telemetry Backend
+
+FleetDash is a backend system designed to process high-frequency telemetry data from a large number of vehicles in real time.
+
+The backend is responsible for receiving vehicle telemetry, processing it without blocking the main Node.js event loop, efficiently storing telemetry using MongoDB's bucket pattern, publishing events through Redis Pub/Sub, and broadcasting real-time updates through Socket.io.
+
+---
+
+## 📌 Problem Statement
+
+Logistics companies may have thousands of vehicles continuously sending:
+
+- GPS coordinates
+- Speed
+- Heading
+- Timestamp
+- Vehicle status
+
+Processing every telemetry update directly on the main event loop can create performance bottlenecks.
+
+FleetDash addresses this by building an event-driven backend architecture where:
+
+```text
+Vehicle Telemetry
+       ↓
+Express API
+       ↓
+Worker Thread
+       ↓
+Validation & Processing
+       ↓
+MongoDB Bucket Storage
+       ↓
+Redis Pub/Sub
+       ↓
+Socket.io
+       ↓
+Real-time Dashboard
+
+
+🛠️ Tech Stack
+Runtime & Framework
+- Node.js
+- Express.js
+Database
+- MongoDB
+- Mongoose
+Processing
+- Node.js worker_threads
+Message Broker
+- Redis
+- ioredis
+Real-Time Communication
+- Socket.io
+Geospatial Processing
+- Turf.js
+API Testing
+- Postman
+
+
+                    ┌──────────────────┐
+                    │ Vehicle / Client │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  Express API     │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ Worker Thread    │
+                    │ Parsing/Validate │
+                    └────────┬─────────┘
+                             │
+                ┌────────────┴────────────┐
+                ▼                         ▼
+       ┌─────────────────┐       ┌─────────────────┐
+       │ MongoDB Bucket  │       │ Redis Publisher │
+       │     Storage     │       └────────┬────────┘
+       └─────────────────┘                │
+                                          ▼
+                                 ┌─────────────────┐
+                                 │ Redis Subscriber │
+                                 └────────┬────────┘
+                                          │
+                                          ▼
+                                 ┌─────────────────┐
+                                 │    Socket.io    │
+                                 └────────┬────────┘
+                                          │
+                                          ▼
+                                 Real-time Clients
+
+
+📅 Development Progress
+Week 1 — Core Backend & Telemetry Pipeline
+
+
+Day 1 — Backend & Database Setup
+What was done
+- Set up Node.js backend.
+- Configured Express.
+- Created backend folder structure.
+- Connected MongoDB using Mongoose.
+- Added environment configuration.
+- Added global error handling.
+- Created initial Vehicle model.
+What I learned
+- Express backend architecture.
+- MongoDB connection using Mongoose.
+- Separation of configuration and application logic.
+- Importance of centralized error handling.
+Next Goals
+- Complete Vehicle APIs.
+- Start telemetry ingestion.
+
+
+Day 2 — Vehicle Management APIs
+What was done
+- Created vehicle creation API.
+- Created API to retrieve all vehicles.
+- Created API to retrieve a vehicle by MongoDB ID.
+- Added required field validation.
+- Added duplicate vehicle ID validation.
+- Added duplicate registration-number validation.
+- Added vehicle status management.
+What I learned
+- REST API design.
+- Mongoose queries.
+- MongoDB ObjectId validation.
+- HTTP status codes such as 400, 404, 409, and 201.
+Next Goals
+- Build telemetry ingestion endpoint.
+- Introduce Worker Threads.
+
+
+Day 3 — Telemetry Ingestion & Worker Threads
+What was done
+- Created telemetry ingestion endpoint.
+- Integrated Node.js worker_threads.
+- Moved telemetry parsing into a worker.
+- Added telemetry validation.
+- Added timestamp conversion.
+- Added latitude/longitude processing.
+- Added speed and heading processing.
+- Added hourly bucket calculation.
+What I learned
+- Node.js Worker Threads.
+- Main-thread vs worker-thread processing.
+- How CPU-heavy processing can affect an event-driven application.
+- Structured telemetry validation.
+Next Goals
+- Store processed telemetry in MongoDB.
+- Implement the bucket pattern.
+
+
+Day 4 — MongoDB Bucket Pattern
+What was done
+- Created TelemetryBucket model.
+- Grouped telemetry data into hourly buckets.
+- Added telemetry count.
+- Appended telemetry points to existing buckets.
+- Created new buckets when required.
+- Updated the vehicle's latest location.
+- Added MongoDB indexes for vehicle and bucket time.
+What I learned
+- MongoDB bucket pattern.
+- Efficient storage of high-frequency time-series data.
+- MongoDB indexing.
+- Reducing the number of documents generated by high-frequency telemetry.
+Next Goals
+- Introduce Redis Pub/Sub.
+- Build the real-time event pipeline.
+
+
+Day 5 — Redis Pub/Sub & Socket.io
+What was done
+- Configured Redis Publisher.
+- Configured Redis Subscriber.
+- Created telemetry Redis channel.
+- Published processed telemetry events.
+- Subscribed to telemetry events.
+- Initialized Socket.io.
+- Connected Redis events with Socket.io.
+- Broadcast telemetry to connected clients.
+What I learned
+- Redis Pub/Sub.
+- Publisher/subscriber architecture.
+- Event-driven backend design.
+- Socket.io real-time communication.
+- Decoupling data ingestion from client notification.
+Next Goals
+- Implement geofence processing.
+- Add real-time breach detection.
+
+
+
+🚀 Week 2 — Geospatial Logic, Optimization & Testing
+
+
+
+Day 6 — Geofence Foundation
+What was done
+- Created geofence backend module structure.
+- Added geofence routes and controller structure.
+- Defined geofence-related backend architecture.
+What I learned
+- Structuring a new backend module.
+- Separating routes, controllers and services.
+- Designing geospatial functionality before integrating it into telemetry processing.
+Next Goals
+- Integrate Turf.js.
+- Implement boundary checks.
+
+
+Day 7 — Geofence Breach Detection
+What was done
+- Integrate Turf.js geospatial calculations.
+- Check vehicle coordinates against geofence boundaries.
+- Determine vehicle inside/outside state.
+- Generate breach events.
+What I learned
+- Geospatial point-in-polygon concepts.
+- Backend geospatial processing.
+- Event-based alert generation.
+Next Goals
+- Connect breach events to Redis and Socket.io.
+- Test real-time alerts.
+
+
+Day 8 — Telemetry Queries & Optimization
+What was done
+- Implement telemetry history retrieval.
+- Add vehicle-specific telemetry queries.
+- Optimize MongoDB queries using indexes.
+- Review bucket-based telemetry storage.
+- Improve validation and error handling.
+What I learned
+- Query optimization.
+- Index-based database access.
+- Time-series data retrieval.
+- Designing APIs around frequently queried data.
+Next Goals
+- Perform load testing.
+- Test high-frequency telemetry ingestion.
+
+
+Day 9 — Load & Performance Testing
+What was done
+- Test high-frequency telemetry ingestion.
+- Test Worker Thread processing.
+- Test Redis message delivery.
+- Test Socket.io broadcasting.
+- Identify backend bottlenecks.
+- Optimize the telemetry pipeline.
+What I learned
+- Backend performance testing.
+- Identifying bottlenecks in event-driven systems.
+- Importance of measuring performance instead of relying only on functional testing.
+Next Goals
+- Perform complete system integration testing.
+- Prepare backend for final review.
+
+
+Day 10 — Final Backend Integration
+What was done
+- Test the complete telemetry pipeline.
+- Verify MongoDB bucket storage.
+- Verify Redis Pub/Sub.
+- Verify Socket.io events.
+- Verify geofence processing.
+- Clean up backend architecture.
+- Improve documentation.
+- Prepare the backend for final project review.
+What I learned
+- Integrating multiple distributed backend components.
+- Debugging event-driven systems.
+- Designing scalable backend pipelines.
+- End-to-end testing.
+Next Goals
+- Final performance validation.
+- Documentation.
+- Deployment preparation.

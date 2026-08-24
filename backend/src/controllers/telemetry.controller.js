@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 import Vehicle from "../models/vehicle.model.js";
 import TelemetryBucket from "../models/telemetryBucket.model.js";
 import publishTelemetry from "../services/telemetryPublisher.service.js";
+import Geofence from "../models/geofence.model.js";
+import { checkGeofence } from "../utils/geofence.util.js";
+import publishGeofenceAlert from "../services/geofenceAlertPublisher.service.js";
 
 export const ingestTelemetry = async (req, res, next) => {
     try {
@@ -49,35 +52,39 @@ export const ingestTelemetry = async (req, res, next) => {
                  *
                  * vehicle + hourly bucket
                  */
-                let bucket = await TelemetryBucket.findOne({
-                    vehicleId: telemetry.vehicleId,
-                    bucketStart: telemetry.bucketStart
-                });
-
                 const telemetryPoint = {
-                    timestamp: telemetry.timestamp,
-                    latitude: telemetry.latitude,
-                    longitude: telemetry.longitude,
-                    speed: telemetry.speed,
-                    heading: telemetry.heading
-                };
+    timestamp: telemetry.timestamp,
+    latitude: telemetry.latitude,
+    longitude: telemetry.longitude,
+    speed: telemetry.speed,
+    heading: telemetry.heading
+};
 
-                if (bucket) {
-                    // Existing bucket → append telemetry
-                    bucket.telemetry.push(telemetryPoint);
-                    bucket.count += 1;
+const bucket = await TelemetryBucket.findOneAndUpdate(
+    {
+        vehicleId: telemetry.vehicleId,
+        bucketStart: telemetry.bucketStart
+    },
+    {
+        $setOnInsert: {
+            vehicleId: telemetry.vehicleId,
+            bucketStart: telemetry.bucketStart,
+            bucketEnd: telemetry.bucketEnd
+        },
 
-                    await bucket.save();
-                } else {
-                    // New hourly bucket
-                    bucket = await TelemetryBucket.create({
-                        vehicleId: telemetry.vehicleId,
-                        bucketStart: telemetry.bucketStart,
-                        bucketEnd: telemetry.bucketEnd,
-                        telemetry: [telemetryPoint],
-                        count: 1
-                    });
-                }
+        $push: {
+            telemetry: telemetryPoint
+        },
+
+        $inc: {
+            count: 1
+        }
+    },
+    {
+        new: true,
+        upsert: true
+    }
+);
 
                 // Update vehicle's latest location
                 await Vehicle.findByIdAndUpdate(
@@ -90,6 +97,46 @@ export const ingestTelemetry = async (req, res, next) => {
                         lastTelemetryAt: telemetry.timestamp
                     }
                 );
+
+                const activeGeofences = await Geofence.find({
+    status: "active"
+});
+
+for (const geofence of activeGeofences) {
+
+    const breached = checkGeofence(
+        telemetry.latitude,
+        telemetry.longitude,
+        geofence.coordinates
+    );
+
+    if (breached) {
+
+        const alert = {
+            event: "GEOFENCE_BREACH",
+
+            vehicleId: telemetry.vehicleId,
+
+            geofenceId: geofence._id,
+
+            geofenceName: geofence.name,
+
+            timestamp: telemetry.timestamp,
+
+            location: {
+                latitude: telemetry.latitude,
+                longitude: telemetry.longitude
+            },
+
+            speed: telemetry.speed,
+
+            heading: telemetry.heading
+        };
+
+        await publishGeofenceAlert(alert);
+
+    }
+}
 
                 await publishTelemetry({
                     vehicleId: telemetry.vehicleId,
@@ -154,8 +201,12 @@ export const getVehicleTelemetry = async (req, res, next) => {
         }
 
         const buckets = await TelemetryBucket.find({
-            vehicleId
-        }).sort({ bucketStart: -1 });
+    vehicleId
+})
+    .sort({
+        bucketStart: -1
+    })
+    .limit(24);
 
         return res.status(200).json({
             success: true,
