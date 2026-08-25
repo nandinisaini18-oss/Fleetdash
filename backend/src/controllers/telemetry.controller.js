@@ -1,5 +1,6 @@
 import { Worker } from "worker_threads";
 import mongoose from "mongoose";
+import { checkVehicleGeofences } from "../services/geofence.service.js";
 import Vehicle from "../models/vehicle.model.js";
 import TelemetryBucket from "../models/telemetryBucket.model.js";
 import publishTelemetry from "../services/telemetryPublisher.service.js";
@@ -147,14 +148,23 @@ for (const geofence of activeGeofences) {
                     heading: telemetry.heading
                 });
 
+                const geofenceAlerts = await checkVehicleGeofences({
+                    vehicleId: telemetry.vehicleId,
+                    latitude: telemetry.latitude,
+                    longitude: telemetry.longitude,
+                    timestamp: telemetry.timestamp
+                });
+
                 return res.status(201).json({
                     success: true,
                     message: "Telemetry ingested successfully",
+
                     data: {
                         vehicleId: telemetry.vehicleId,
                         bucketStart: telemetry.bucketStart,
                         bucketEnd: telemetry.bucketEnd,
-                        count: bucket.count
+                        count: bucket.count,
+                        geofenceAlerts: geofenceAlerts.length
                     }
                 });
 

@@ -3,6 +3,7 @@ import geofenceRoutes from "./routes/geofence.routes.js";
 import telemetryRoutes from "./routes/telemetry.routes.js";
 import vehicleRoutes from "./routes/vehicle.routes.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
 
 const app = express();
 
@@ -33,6 +34,11 @@ app.use(
 app.use(
     "/api/geofences",
     geofenceRoutes
+);
+
+app.use(
+    "/api/analytics",
+    analyticsRoutes
 );
 
 // Global error handler

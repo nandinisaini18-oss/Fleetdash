@@ -5,11 +5,11 @@ const startTelemetrySubscriber = async () => {
 
     await redisSubscriber.subscribe(
         "telemetry",
-        "geofence-alert"
+        "geofence-alerts"
     );
 
     console.log(
-        "Subscribed to telemetry and geofence-alert channels"
+        "Subscribed to telemetry and geofence-alerts channels"
     );
 
     redisSubscriber.on(
@@ -24,20 +24,17 @@ const startTelemetrySubscriber = async () => {
 
                 if (channel === "telemetry") {
 
-                    console.log(
-                        "Telemetry received from Redis"
-                    );
-
                     io.emit(
                         "telemetry",
                         data
                     );
+
                 }
 
-                if (channel === "geofence-alert") {
+                if (channel === "geofence-alerts") {
 
                     console.log(
-                        "Geofence breach received from Redis"
+                        "Geofence alert received:"
                     );
 
                     console.log(data);
@@ -46,6 +43,7 @@ const startTelemetrySubscriber = async () => {
                         "geofence-alert",
                         data
                     );
+
                 }
 
             } catch (error) {
