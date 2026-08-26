@@ -1,187 +1,97 @@
-import { Worker } from "worker_threads";
 import mongoose from "mongoose";
 import { checkVehicleGeofences } from "../services/geofence.service.js";
 import Vehicle from "../models/vehicle.model.js";
 import TelemetryBucket from "../models/telemetryBucket.model.js";
 import publishTelemetry from "../services/telemetryPublisher.service.js";
-import Geofence from "../models/geofence.model.js";
-import { checkGeofence } from "../utils/geofence.util.js";
-import publishGeofenceAlert from "../services/geofenceAlertPublisher.service.js";
+import workerPool from "../services/workerPool.service.js";
 
 export const ingestTelemetry = async (req, res, next) => {
     try {
-        const worker = new Worker(
-            new URL("../workers/telemetry.worker.js", import.meta.url),
-            {
-                workerData: req.body
-            }
-        );
+        let telemetry;
 
-        worker.once("message", async (result) => {
-            try {
-                if (!result.success) {
-                    return res.status(400).json({
-                        success: false,
-                        message: result.message
-                    });
-                }
-
-                const telemetry = result.data;
-
-                // Validate MongoDB vehicle ID
-                if (!mongoose.Types.ObjectId.isValid(telemetry.vehicleId)) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "Invalid vehicle ID"
-                    });
-                }
-
-                // Check whether vehicle exists
-                const vehicle = await Vehicle.findById(
-                    telemetry.vehicleId
-                );
-
-                if (!vehicle) {
-                    return res.status(404).json({
-                        success: false,
-                        message: "Vehicle not found"
-                    });
-                }
-
-                /*
-                 * Find the bucket belonging to:
-                 *
-                 * vehicle + hourly bucket
-                 */
-                const telemetryPoint = {
-    timestamp: telemetry.timestamp,
-    latitude: telemetry.latitude,
-    longitude: telemetry.longitude,
-    speed: telemetry.speed,
-    heading: telemetry.heading
-};
-
-const bucket = await TelemetryBucket.findOneAndUpdate(
-    {
-        vehicleId: telemetry.vehicleId,
-        bucketStart: telemetry.bucketStart
-    },
-    {
-        $setOnInsert: {
-            vehicleId: telemetry.vehicleId,
-            bucketStart: telemetry.bucketStart,
-            bucketEnd: telemetry.bucketEnd
-        },
-
-        $push: {
-            telemetry: telemetryPoint
-        },
-
-        $inc: {
-            count: 1
+        try {
+            telemetry = await workerPool.run(req.body);
+        } catch (validationError) {
+            return res.status(400).json({
+                success: false,
+                message: validationError.message
+            });
         }
-    },
-    {
-        new: true,
-        upsert: true
-    }
-);
 
-                // Update vehicle's latest location
-                await Vehicle.findByIdAndUpdate(
-                    telemetry.vehicleId,
-                    {
-                        currentLocation: {
-                            latitude: telemetry.latitude,
-                            longitude: telemetry.longitude
-                        },
-                        lastTelemetryAt: telemetry.timestamp
-                    }
-                );
+        if (!mongoose.Types.ObjectId.isValid(telemetry.vehicleId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid vehicle ID"
+            });
+        }
 
-                const activeGeofences = await Geofence.find({
-    status: "active"
-});
+        const vehicle = await Vehicle.findById(telemetry.vehicleId);
 
-for (const geofence of activeGeofences) {
+        if (!vehicle) {
+            return res.status(404).json({
+                success: false,
+                message: "Vehicle not found"
+            });
+        }
 
-    const breached = checkGeofence(
-        telemetry.latitude,
-        telemetry.longitude,
-        geofence.coordinates
-    );
-
-    if (breached) {
-
-        const alert = {
-            event: "GEOFENCE_BREACH",
-
-            vehicleId: telemetry.vehicleId,
-
-            geofenceId: geofence._id,
-
-            geofenceName: geofence.name,
-
+        const telemetryPoint = {
             timestamp: telemetry.timestamp,
-
-            location: {
-                latitude: telemetry.latitude,
-                longitude: telemetry.longitude
-            },
-
+            latitude: telemetry.latitude,
+            longitude: telemetry.longitude,
             speed: telemetry.speed,
-
             heading: telemetry.heading
         };
 
-        await publishGeofenceAlert(alert);
-
-    }
-}
-
-                await publishTelemetry({
+        const bucket = await TelemetryBucket.findOneAndUpdate(
+            {
+                vehicleId: telemetry.vehicleId,
+                bucketStart: telemetry.bucketStart
+            },
+            {
+                $setOnInsert: {
                     vehicleId: telemetry.vehicleId,
-                    timestamp: telemetry.timestamp,
-                    latitude: telemetry.latitude,
-                    longitude: telemetry.longitude,
-                    speed: telemetry.speed,
-                    heading: telemetry.heading
-                });
+                    bucketStart: telemetry.bucketStart,
+                    bucketEnd: telemetry.bucketEnd
+                },
+                $push: { telemetry: telemetryPoint },
+                $inc: { count: 1 }
+            },
+            { new: true, upsert: true }
+        );
 
-                const geofenceAlerts = await checkVehicleGeofences({
-                    vehicleId: telemetry.vehicleId,
-                    latitude: telemetry.latitude,
-                    longitude: telemetry.longitude,
-                    timestamp: telemetry.timestamp
-                });
-
-                return res.status(201).json({
-                    success: true,
-                    message: "Telemetry ingested successfully",
-
-                    data: {
-                        vehicleId: telemetry.vehicleId,
-                        bucketStart: telemetry.bucketStart,
-                        bucketEnd: telemetry.bucketEnd,
-                        count: bucket.count,
-                        geofenceAlerts: geofenceAlerts.length
-                    }
-                });
-
-            } catch (error) {
-                next(error);
-            }
+        await Vehicle.findByIdAndUpdate(telemetry.vehicleId, {
+            currentLocation: {
+                latitude: telemetry.latitude,
+                longitude: telemetry.longitude
+            },
+            lastTelemetryAt: telemetry.timestamp
         });
 
-        worker.once("error", (error) => {
-            next(error);
+        await publishTelemetry({
+            vehicleId: telemetry.vehicleId,
+            timestamp: telemetry.timestamp,
+            latitude: telemetry.latitude,
+            longitude: telemetry.longitude,
+            speed: telemetry.speed,
+            heading: telemetry.heading
         });
 
-        worker.once("exit", (code) => {
-            if (code !== 0) {
-                console.error(
-                    `Telemetry worker stopped with exit code ${code}`
-                );
+        const geofenceAlerts = await checkVehicleGeofences({
+            vehicleId: telemetry.vehicleId,
+            latitude: telemetry.latitude,
+            longitude: telemetry.longitude,
+            timestamp: telemetry.timestamp
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Telemetry ingested successfully",
+            data: {
+                vehicleId: telemetry.vehicleId,
+                bucketStart: telemetry.bucketStart,
+                bucketEnd: telemetry.bucketEnd,
+                count: bucket.count,
+                geofenceAlerts: geofenceAlerts.length
             }
         });
 

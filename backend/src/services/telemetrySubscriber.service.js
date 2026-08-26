@@ -5,7 +5,7 @@ const startTelemetrySubscriber = async () => {
 
     await redisSubscriber.subscribe(
         "telemetry",
-        "geofence-alerts"
+        "geofence-alert"
     );
 
     console.log(
@@ -31,7 +31,7 @@ const startTelemetrySubscriber = async () => {
 
                 }
 
-                if (channel === "geofence-alerts") {
+                if (channel === "geofence-alert") {
 
                     console.log(
                         "Geofence alert received:"

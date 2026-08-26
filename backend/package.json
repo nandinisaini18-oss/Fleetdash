@@ -23,12 +23,15 @@
   "dependencies": {
     "@turf/turf": "^7.4.0",
     "bcrypt": "^6.0.0",
+    "brew": "^0.0.8",
     "cookieparser": "^0.1.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
+    "k6": "^0.0.0",
     "mongoose": "^9.9.2",
+    "piscina": "^5.3.1",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
