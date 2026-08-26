@@ -284,3 +284,46 @@ Next Goals
 - Final performance validation.
 - Documentation.
 - Deployment preparation.
+
+
+Day 11 — Backend Bug Fixes & Hardening
+What was done
+- Fixed a Redis channel name mismatch between the geofence alert publisher and subscriber (alerts were being published on one channel name but subscribed to another, silently dropping all geofence breach events).
+- Removed duplicate geofence-breach detection logic — telemetry ingestion was running two separate breach checks, one unthrottled and non-persistent, the other debounced and persisted to MongoDB.
+- Consolidated to a single geofence-check path with debounce logic to prevent alert spam from repeated telemetry points inside the same zone.
+What I learned
+- How silent pub/sub mismatches can make a feature look "done" in code while never actually firing at runtime.
+- The importance of tracing an event end-to-end (publish → subscribe → emit) rather than testing each piece in isolation.
+- Why debounce/throttle logic matters for event-driven alerting at high frequency.
+Next Goals
+- Replace per-request worker_threads with a worker pool.
+- Begin load testing against a throughput target.
+
+
+Day 12 — Worker Pool & Load Testing Setup
+What was done
+- Replaced per-request Worker instantiation with a pooled worker architecture (Piscina) to avoid thread-spawn overhead under high request volume.
+- Refactored the telemetry worker to a pooled task function instead of a parentPort/workerData-based script.
+- Wrote a k6 load-testing script targeting 2,000 requests/sec against the telemetry ingestion endpoint.
+- Increased MongoDB connection pool size to support higher concurrent write volume.
+What I learned
+- Why spawning a new OS thread per request doesn't scale and how worker pools amortize that cost.
+- k6 scenario configuration for constant-arrival-rate load testing.
+- How MongoDB's connection pool size can become a bottleneck independent of application code.
+Next Goals
+- Run and validate load test results against the 2,000 req/sec target.
+- Validate MongoDB index performance (<5ms) using explain().
+
+
+Day 13 — Index Validation & Version Control Setup
+What was done
+- Validated TelemetryBucket query performance using explain() against the compound (vehicleId, bucketStart) index.
+- Set up .gitignore to exclude node_modules and environment files from version control.
+- Initialized Git repository and pushed the backend codebase to GitHub.
+What I learned
+- Using explain() to confirm MongoDB is actually using the intended index rather than assuming it from schema definition alone.
+- Safe Git practices for backend projects, particularly around preventing environment secrets from being committed.
+Next Goals
+- Implement binary transport (ArrayBuffers) for Socket.io payloads.
+- Set up a Redis cluster in place of a single local instance.
+- Begin Jest/Supertest unit test coverage.
