@@ -1,122 +1,81 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect, useCallback } from "react";
+import Header from "./components/Header";
+import StatsPanel from "./components/StatsPanel";
+import FleetPanel from "./components/FleetPanel";
+import LiveMap from "./components/LiveMap";
+import AlertBanner from "./components/AlertBanner";
+import { getOverviewAnalytics, getVehicleAnalytics } from "./services/api";
+import useSocket from "./hooks/useSocket";
+import useTelemetryBuffer from "./hooks/useTelemetryBuffer";
+import useGeofenceAlerts from "./hooks/useGeofenceAlerts";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [overview, setOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(true);
+  const [overviewError, setOverviewError] = useState(null);
+
+  const [vehicles, setVehicles] = useState([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [vehiclesError, setVehiclesError] = useState(null);
+
+  const { socket, isConnected } = useSocket();
+  const { bufferRef } = useTelemetryBuffer(socket);
+  const { alerts, dismiss: dismissAlert } = useGeofenceAlerts(socket);
+
+  const fetchOverview = useCallback(async () => {
+    try {
+      setOverviewLoading(true);
+      setOverviewError(null);
+      const res = await getOverviewAnalytics();
+      setOverview(res.data);
+    } catch (err) {
+      setOverviewError(err.message);
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, []);
+
+  const fetchVehicles = useCallback(async () => {
+    try {
+      setVehiclesLoading(true);
+      setVehiclesError(null);
+      const res = await getVehicleAnalytics();
+      setVehicles(res.data);
+    } catch (err) {
+      setVehiclesError(err.message);
+    } finally {
+      setVehiclesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    function init() {
+      fetchOverview();
+      fetchVehicles();
+    }
+
+    init();
+
+    const interval = setInterval(() => {
+      fetchOverview();
+      fetchVehicles();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchOverview, fetchVehicles]);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <div className="dashboard">
+      <Header socketConnected={isConnected} />
+      <StatsPanel overview={overview} loading={overviewLoading} error={overviewError} />
+      <div className="dashboard-body">
+        <FleetPanel vehicles={vehicles} loading={vehiclesLoading} error={vehiclesError} />
+        <LiveMap bufferRef={bufferRef} vehicles={vehicles} />
+      </div>
+      <AlertBanner alerts={alerts} onDismiss={dismissAlert} />
+    </div>
+  );
 }
 
-export default App
+export default App;
