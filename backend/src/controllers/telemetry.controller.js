@@ -7,8 +7,8 @@ import workerPool from "../services/workerPool.service.js";
 
 export const ingestTelemetry = async (req, res, next) => {
     try {
+        console.time("worker");
         let telemetry;
-
         try {
             telemetry = await workerPool.run(req.body);
         } catch (validationError) {
@@ -17,6 +17,7 @@ export const ingestTelemetry = async (req, res, next) => {
                 message: validationError.message
             });
         }
+        console.timeEnd("worker");
 
         if (!mongoose.Types.ObjectId.isValid(telemetry.vehicleId)) {
             return res.status(400).json({
@@ -25,7 +26,9 @@ export const ingestTelemetry = async (req, res, next) => {
             });
         }
 
+        console.time("findVehicle");
         const vehicle = await Vehicle.findById(telemetry.vehicleId);
+        console.timeEnd("findVehicle");
 
         if (!vehicle) {
             return res.status(404).json({
@@ -42,6 +45,7 @@ export const ingestTelemetry = async (req, res, next) => {
             heading: telemetry.heading
         };
 
+        console.time("bucketUpdate");
         const bucket = await TelemetryBucket.findOneAndUpdate(
             {
                 vehicleId: telemetry.vehicleId,
@@ -58,7 +62,9 @@ export const ingestTelemetry = async (req, res, next) => {
             },
             { new: true, upsert: true }
         );
+        console.timeEnd("bucketUpdate");
 
+        console.time("vehicleUpdate");
         await Vehicle.findByIdAndUpdate(telemetry.vehicleId, {
             currentLocation: {
                 latitude: telemetry.latitude,
@@ -66,7 +72,9 @@ export const ingestTelemetry = async (req, res, next) => {
             },
             lastTelemetryAt: telemetry.timestamp
         });
+        console.timeEnd("vehicleUpdate");
 
+        console.time("publish");
         await publishTelemetry({
             vehicleId: telemetry.vehicleId,
             timestamp: telemetry.timestamp,
@@ -75,13 +83,16 @@ export const ingestTelemetry = async (req, res, next) => {
             speed: telemetry.speed,
             heading: telemetry.heading
         });
+        console.timeEnd("publish");
 
+        console.time("geofenceCheck");
         const geofenceAlerts = await checkVehicleGeofences({
             vehicleId: telemetry.vehicleId,
             latitude: telemetry.latitude,
             longitude: telemetry.longitude,
             timestamp: telemetry.timestamp
         });
+        console.timeEnd("geofenceCheck");
 
         return res.status(201).json({
             success: true,

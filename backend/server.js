@@ -1,3 +1,5 @@
+process.removeAllListeners("warning");
+process.on("warning", () => {});
 import dotenv from "dotenv";
 import http from "http";
 
@@ -60,3 +62,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+
