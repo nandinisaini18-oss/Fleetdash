@@ -327,3 +327,36 @@ Next Goals
 - Implement binary transport (ArrayBuffers) for Socket.io payloads.
 - Set up a Redis cluster in place of a single local instance.
 - Begin Jest/Supertest unit test coverage.
+
+
+Day 14 — Load Testing Deep-Dive & Bottleneck Diagnosis
+What was done
+- Debugged a series of environment issues blocking load testing (k6 and mongosh not installed, PATH not updated after install, nodemon watching and restarting on load-test script changes).
+- Fixed nodemon configuration to exclude the load-tests folder from triggering restarts.
+- Discovered that testing against a single repeated vehicleId caused MongoDB write contention on one document; corrected the k6 script to distribute load across multiple vehicles, matching a realistic fleet scenario.
+- Added per-step timing instrumentation (console.time/console.timeEnd) across the ingestion pipeline (worker validation, vehicle lookup, bucket update, vehicle update, publish, geofence check) to isolate latency by stage instead of guessing.
+- Identified periodic synchronized latency spikes (several hundred ms) across multiple MongoDB operations occurring together, pointing to database-side contention rather than application code.
+What I learned
+- How to systematically isolate a performance bottleneck using stage-level timing instead of only looking at end-to-end request duration.
+- Why testing with a single shared document ID produces artificial write contention that doesn't reflect real-world multi-vehicle traffic.
+- How to recognize the difference between application-level slowness and infrastructure-level throttling from timing patterns alone.
+Next Goals
+- Confirm whether the observed latency spikes are caused by MongoDB Atlas free-tier (M0) throttling.
+- Get a clean, complete load test run and record final throughput numbers.
+
+
+Day 15 — Root Cause Confirmed & Backend Committed
+What was done
+- Confirmed the database connection was pointed at a MongoDB Atlas M0 (free tier) cluster, which explains the periodic latency spikes observed on Day 14 — free-tier clusters are shared and throttled under sustained write load, independent of application code or connection pool size.
+- Rotated the exposed database credential after it was inadvertently shared during debugging.
+- Verified .gitignore correctly excludes .env and node_modules.
+- Committed and pushed the backend codebase to GitHub, including the worker pool, pub/sub fixes, k6 load-testing scripts, and instrumentation added over the previous days.
+What I learned
+- The importance of distinguishing infrastructure limitations (managed service tier constraints) from application bugs before concluding a system doesn't scale.
+- Safe handling and rotation of accidentally exposed credentials.
+- Practical Git hygiene for a backend project with secrets and generated dependencies.
+Next Goals
+- Re-run load tests against a local or higher-tier MongoDB instance to measure the application's real throughput ceiling separate from free-tier limits.
+- Implement binary transport (ArrayBuffers) for Socket.io payloads.
+- Set up a Redis cluster in place of a single local instance.
+- Begin Jest/Supertest unit test coverage.
