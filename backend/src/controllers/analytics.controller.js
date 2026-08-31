@@ -191,3 +191,22 @@ export const getGeofenceAnalytics = async (
 
     }
 };
+
+export const getSystemHealth = async (req, res, next) => {
+    try {
+        const redisPublisher = (await import("../config/redis.js")).default;
+
+        const redisStatus = redisPublisher.status;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                redis: redisStatus,
+                mongoConnected: mongoose.connection.readyState === 1
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};

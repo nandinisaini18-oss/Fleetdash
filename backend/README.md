@@ -360,3 +360,43 @@ Next Goals
 - Implement binary transport (ArrayBuffers) for Socket.io payloads.
 - Set up a Redis cluster in place of a single local instance.
 - Begin Jest/Supertest unit test coverage.
+
+
+Day 16 — Binary Transport for Socket.io
+What was done
+- Implemented a binary encoding/decoding utility for telemetry payloads using Node.js Buffer.
+- Replaced JSON-based telemetry broadcasts with a compact binary ArrayBuffer format sent over a new "telemetry-binary" Socket.io event.
+- Kept geofence alerts on JSON, since they are low-frequency and don't need binary optimization.
+What I learned
+- Manual binary buffer layout design (fixed-width numeric fields plus a variable-length string tail).
+- Trade-offs between binary and JSON payloads for high-frequency real-time data.
+- Buffer read/write methods for encoding structured data compactly.
+Next Goals
+- Coordinate with frontend on decoding the binary payload correctly.
+- Begin backend unit test coverage.
+
+
+Day 17 — Jest & Supertest Unit Testing
+What was done
+- Set up Jest and Supertest for backend API testing.
+- Wrote initial test suite covering vehicle creation, required-field validation, fetching a vehicle by ID, and 404 handling for a non-existent vehicle.
+What I learned
+- Configuring Jest to work with native ES modules.
+- Writing integration-style API tests with Supertest against an Express app.
+- Structuring test setup/teardown against a real MongoDB connection.
+Next Goals
+- Expand test coverage to telemetry ingestion and geofence endpoints.
+- Improve Redis connection resilience.
+
+
+Day 18 — Redis Resilience & System Health Check
+What was done
+- Added a retry strategy with exponential backoff to both Redis publisher and subscriber connections.
+- Added logging for Redis reconnection attempts.
+- Created a new /api/analytics/health endpoint reporting Redis connection status and MongoDB connection state.
+What I learned
+- ioredis retry strategy configuration for handling transient connection drops.
+- Why observability endpoints (health checks) matter for diagnosing distributed system issues in production.
+Next Goals
+- Set up a proper Redis cluster configuration.
+- Expand test coverage further and prepare backend for final review.

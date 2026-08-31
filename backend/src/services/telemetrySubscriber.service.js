@@ -1,5 +1,6 @@
 import redisSubscriber from "../config/redisSubscriber.js";
 import { getIO } from "./socket.service.js";
+import { encodeTelemetry } from "../utils/telemetryCodec.util.js";
 
 const startTelemetrySubscriber = async () => {
 
@@ -24,12 +25,14 @@ const startTelemetrySubscriber = async () => {
 
                 if (channel === "telemetry") {
 
-                    io.emit(
-                        "telemetry",
-                        data
-                    );
+    const binaryPayload = encodeTelemetry(data);
 
-                }
+    io.emit(
+        "telemetry-binary",
+        binaryPayload
+    );
+
+}
 
                 if (channel === "geofence-alert") {
 
