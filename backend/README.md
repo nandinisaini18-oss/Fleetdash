@@ -400,3 +400,16 @@ What I learned
 Next Goals
 - Set up a proper Redis cluster configuration.
 - Expand test coverage further and prepare backend for final review.
+
+
+Day 19 — Expanded Test Coverage
+What was done
+- Fixed incorrect file locations for jest.config.js and the initial test file (previously nested under src/ instead of the project root and tests/ folder).
+- Added a telemetry ingestion test suite covering missing vehicleId, invalid latitude, non-existent vehicle, and successful ingestion.
+- Added a geofence test suite covering creation validation, fetch by ID, 404 handling, and deletion.
+What I learned
+- Keeping test configuration and test files in conventional locations so tooling and other contributors can find them without guesswork.
+- Writing negative-path tests (invalid input, not-found cases) alongside happy-path tests for more meaningful coverage.
+Next Goals
+- Add test coverage for analytics endpoints.
+- Begin CI/CD pipeline setup (GitHub Actions).
