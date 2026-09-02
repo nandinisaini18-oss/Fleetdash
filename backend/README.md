@@ -413,3 +413,19 @@ What I learned
 Next Goals
 - Add test coverage for analytics endpoints.
 - Begin CI/CD pipeline setup (GitHub Actions).
+
+
+
+Day 20 — CI/CD Pipeline Setup
+What was done
+- Created a GitHub Actions workflow that runs automatically on pushes and pull requests touching the backend folder.
+- Configured a Redis service container in CI so tests requiring Redis can run in an isolated environment.
+- Wired the MongoDB connection string as a GitHub Actions secret rather than committing it.
+- Added a CI status badge to the README.
+What I learned
+- GitHub Actions workflow syntax (jobs, services, steps, working directories for a monorepo-style structure).
+- Using service containers to provide dependencies (Redis) during automated test runs.
+- Managing secrets safely in CI rather than exposing them in workflow files.
+Next Goals
+- Add analytics endpoint test coverage.
+- Review and finalize documentation ahead of final project review.
