@@ -5,8 +5,6 @@
   overflow: hidden;
 }
 
-/* ── Header ─────────────────────────────────────────── */
-
 .dashboard-header {
   display: flex;
   align-items: center;
