@@ -1,7 +1,7 @@
 import Vehicle from "../models/vehicle.model.js";
 import TelemetryBucket from "../models/telemetryBucket.model.js";
 import GeofenceAlert from "../models/geofenceAlert.model.js";
-
+import mongoose from "mongoose";
 
 // Overall dashboard analytics
 export const getOverviewAnalytics = async (
