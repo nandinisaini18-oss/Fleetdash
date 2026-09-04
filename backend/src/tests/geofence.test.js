@@ -1,8 +1,8 @@
 import request from "supertest";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import app from "../src/app.js";
-import Geofence from "../src/models/geofence.model.js";
+import app from "../app.js";
+import Geofence from "../models/geofence.model.js";
 
 dotenv.config();
 

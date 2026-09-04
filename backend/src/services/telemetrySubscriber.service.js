@@ -3,61 +3,46 @@ import { getIO } from "./socket.service.js";
 import { encodeTelemetry } from "../utils/telemetryCodec.util.js";
 
 const startTelemetrySubscriber = async () => {
-
     await redisSubscriber.subscribe(
         "telemetry",
         "geofence-alert"
     );
 
     console.log(
-        "Subscribed to telemetry and geofence-alerts channels"
+        "Subscribed to telemetry and geofence-alert channels"
     );
 
     redisSubscriber.on(
         "message",
         (channel, message) => {
-
             try {
-
                 const data = JSON.parse(message);
-
                 const io = getIO();
 
                 if (channel === "telemetry") {
+                    const binaryPayload =
+                        encodeTelemetry(data);
 
-    const binaryPayload = encodeTelemetry(data);
-
-    io.emit(
-        "telemetry-binary",
-        binaryPayload
-    );
-
-}
-
-                if (channel === "geofence-alert") {
-
-                    console.log(
-                        "Geofence alert received:"
+                    io.emit(
+                        "telemetry-binary",
+                        binaryPayload
                     );
 
-                    console.log(data);
+                    return;
+                }
 
+                if (channel === "geofence-alert") {
                     io.emit(
                         "geofence-alert",
                         data
                     );
-
                 }
-
             } catch (error) {
-
                 console.error(
                     "Failed to process Redis message:",
                     error.message
                 );
-
             }
-
         }
     );
 };

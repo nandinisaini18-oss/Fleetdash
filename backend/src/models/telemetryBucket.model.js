@@ -67,10 +67,15 @@ const telemetryBucketSchema = new mongoose.Schema(
     }
 );
 
-telemetryBucketSchema.index({
-    vehicleId: 1,
-    bucketStart: 1
-});
+telemetryBucketSchema.index(
+    {
+        vehicleId: 1,
+        bucketStart: 1
+    },
+    {
+        unique: true
+    }
+);
 
 const TelemetryBucket = mongoose.model(
     "TelemetryBucket",

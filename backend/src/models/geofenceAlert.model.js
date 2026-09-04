@@ -11,6 +11,7 @@ const geofenceAlertSchema = new mongoose.Schema(
 
         geofenceId: {
             type: mongoose.Schema.Types.ObjectId,
+            
             ref: "Geofence",
             required: true,
             index: true

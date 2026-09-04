@@ -8,7 +8,7 @@ import {
     deleteGeofence
 } from "../controllers/geofence.controller.js";
 
-// const router = express.Router();
+const router = express.Router();
 
 // router.post("/", createGeofence);
 

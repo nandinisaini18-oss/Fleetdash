@@ -1,8 +1,8 @@
 import request from "supertest";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import app from "../src/app.js";
-import Vehicle from "../src/models/vehicle.model.js";
+import app from "../app.js";
+import Vehicle from "../models/vehicle.model.js";
 
 dotenv.config();
 
