@@ -34,6 +34,7 @@ function decodeTelemetryBinary(raw) {
     return {
       vehicleId,
       timestamp: new Date(timestamp).toISOString(),
+      timestampMs: timestamp,
       latitude,
       longitude,
       speed,
@@ -63,6 +64,7 @@ export default function useTelemetryBuffer(socket) {
     const existing = bufferRef.current.get(data.vehicleId);
     if (existing) {
       existing.timestamp = data.timestamp;
+      existing.timestampMs = data.timestampMs;
       existing.latitude = data.latitude;
       existing.longitude = data.longitude;
       existing.speed = data.speed;
@@ -71,6 +73,7 @@ export default function useTelemetryBuffer(socket) {
       bufferRef.current.set(data.vehicleId, {
         vehicleId: data.vehicleId,
         timestamp: data.timestamp,
+        timestampMs: data.timestampMs,
         latitude: data.latitude,
         longitude: data.longitude,
         speed: data.speed,

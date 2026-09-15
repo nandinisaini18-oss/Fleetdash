@@ -1,9 +1,6 @@
-import { createViewport, toCanvasCoords } from "./coordinateTransform";
+import { toCanvasCoords } from "./coordinateTransform";
 import { drawVehicles } from "./drawVehicles";
 import { drawGeofences } from "./drawGeofences";
-
-const GRID_COLOR = "rgba(48, 54, 61, 0.5)";
-const BG_COLOR = "#0D1117";
 
 export default class CanvasRenderer {
   constructor(canvas, bufferRef) {
@@ -18,16 +15,11 @@ export default class CanvasRenderer {
     this.running = false;
     this.hoveredVehicleId = null;
     this.selectedVehicleId = null;
+    this.map = null;
+  }
 
-    this._viewport = null;
-    this._viewportBufferVersion = -1;
-    this._viewportGeofenceVersion = 0;
-    this._viewportWidth = 0;
-    this._viewportHeight = 0;
-
-    this._geofenceCache = null;
-    this._geofenceCacheVersion = 0;
-    this._geofenceCacheViewportKey = "";
+  setMap(map) {
+    this.map = map;
   }
 
   setHoveredVehicle(vehicleId) {
@@ -38,152 +30,92 @@ export default class CanvasRenderer {
     this.selectedVehicleId = vehicleId;
   }
 
-  getViewport() {
-    return this._viewport;
-  }
-
   setGeofences(geofences) {
     this.geofences = geofences;
-    this._geofenceCacheVersion++;
   }
 
   resize() {
+    if (!this.canvas || !this.canvas.parentElement) return;
     const rect = this.canvas.parentElement.getBoundingClientRect();
-    this.width = rect.width;
-    this.height = rect.height;
-    this.dpr = window.devicePixelRatio || 1;
+    if (!rect || rect.width < 2 || rect.height < 2) return;
+    this.width = Math.floor(rect.width);
+    this.height = Math.floor(rect.height);
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = this.width * this.dpr;
     this.canvas.height = this.height * this.dpr;
     this.canvas.style.width = this.width + "px";
     this.canvas.style.height = this.height + "px";
-    this._viewportWidth = this.width;
-    this._viewportHeight = this.height;
-    this._viewportBufferVersion = -1;
-  }
-
-  _getViewport(buffer) {
-    const bufferSize = buffer.size;
-    if (
-      this._viewport &&
-      this._viewportBufferVersion === bufferSize &&
-      this._viewportGeofenceVersion === this._geofenceCacheVersion &&
-      this._viewportWidth === this.width &&
-      this._viewportHeight === this.height
-    ) {
-      return this._viewport;
-    }
-    this._viewport = createViewport(this.width, this.height, this.geofences, buffer);
-    this._viewportBufferVersion = bufferSize;
-    this._viewportGeofenceVersion = this._geofenceCacheVersion;
-    this._viewportWidth = this.width;
-    this._viewportHeight = this.height;
-    return this._viewport;
-  }
-
-  drawGrid() {
-    const ctx = this.ctx;
-    const dpr = this.dpr;
-    const step = 50 * dpr;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
-
-    ctx.beginPath();
-    ctx.strokeStyle = GRID_COLOR;
-    ctx.lineWidth = 0.5 * dpr;
-
-    for (let x = 0; x < w; x += step) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-    }
-
-    for (let y = 0; y < h; y += step) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-    }
-
-    ctx.stroke();
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
 
   drawEmptyState() {
     const ctx = this.ctx;
-    const dpr = this.dpr;
-    const cx = this.canvas.width / 2;
-    const cy = this.canvas.height / 2;
+    const cx = this.width / 2;
+    const cy = this.height / 2;
 
-    ctx.font = `${14 * dpr}px "Fira Sans", sans-serif`;
-    ctx.fillStyle = "rgba(139, 148, 158, 0.5)";
+    ctx.font = '14px "Fira Sans", sans-serif';
+    ctx.fillStyle = "rgba(139, 148, 158, 0.7)";
     ctx.textAlign = "center";
-    ctx.fillText("No live vehicle data", cx, cy - 10 * dpr);
+    ctx.fillText("No live vehicle data", cx, cy - 10);
 
-    ctx.font = `${11 * dpr}px "Fira Code", monospace`;
-    ctx.fillStyle = "rgba(139, 148, 158, 0.3)";
-    ctx.fillText("Waiting for telemetry events...", cx, cy + 14 * dpr);
+    ctx.font = '11px "Fira Code", monospace';
+    ctx.fillStyle = "rgba(139, 148, 158, 0.4)";
+    ctx.fillText("Waiting for telemetry events...", cx, cy + 14);
   }
 
   render() {
+    const map = this.map;
+    if (!map || !this.canvas || !this.ctx) return;
+
     const ctx = this.ctx;
-    const dpr = this.dpr;
-
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-    ctx.fillStyle = BG_COLOR;
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    this.drawGrid();
+    ctx.clearRect(0, 0, this.width, this.height);
 
     const buffer = this.bufferRef.current;
     const vehicleCount = buffer.size;
 
-    const viewport = this._getViewport(buffer);
-    this._viewport = viewport;
-
-    drawGeofences(ctx, this.geofences, viewport, this.canvas.width, this.canvas.height, dpr);
+    drawGeofences(ctx, this.geofences, this.map);
 
     if (vehicleCount > 0) {
-      drawVehicles(ctx, buffer, viewport, this.canvas.width, this.canvas.height, dpr);
-      this.drawSelectionRing(ctx, buffer, viewport, dpr);
+      drawVehicles(ctx, buffer, this.map, this.width, this.height);
+      this.drawSelectionRing(ctx, buffer);
     } else {
       this.drawEmptyState();
     }
   }
 
-  drawSelectionRing(ctx, buffer, viewport, dpr) {
+  drawSelectionRing(ctx, buffer) {
     const targetId = this.selectedVehicleId || this.hoveredVehicleId;
-    if (!targetId) return;
+    if (!targetId || !this.map) return;
 
     const telemetry = buffer.get(targetId);
     if (!telemetry) return;
 
-    const { x, y } = toCanvasCoords(
-      telemetry.latitude,
-      telemetry.longitude,
-      viewport,
-      this.canvas.width,
-      this.canvas.height
-    );
+    const { x, y } = toCanvasCoords(telemetry.latitude, telemetry.longitude, this.map);
 
     const isSelected = targetId === this.selectedVehicleId;
-    const ringRadius = 12 * dpr;
+    const ringRadius = isSelected ? 16 : 14;
 
     ctx.beginPath();
     ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = isSelected ? "#00FF41" : "rgba(0, 255, 65, 0.6)";
-    ctx.lineWidth = 2 * dpr;
+    ctx.strokeStyle = isSelected ? "#00FF41" : "rgba(0, 255, 65, 0.5)";
+    ctx.lineWidth = isSelected ? 2.5 : 1.5;
     ctx.stroke();
 
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(x, y, ringRadius + 4 * dpr, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(0, 255, 65, 0.25)";
-      ctx.lineWidth = 1 * dpr;
+      ctx.arc(x, y, ringRadius + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(0, 255, 65, 0.2)";
+      ctx.lineWidth = 1;
       ctx.stroke();
     }
   }
 
   loop = () => {
     if (!this.running) return;
-    this.render();
+    // Schedule the next frame BEFORE rendering so a single bad frame
+    // (e.g. map torn down mid-frame) can never permanently kill the loop.
     this.animationId = requestAnimationFrame(this.loop);
+    this.render();
   };
 
   start() {
@@ -199,5 +131,12 @@ export default class CanvasRenderer {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
+  }
+
+  dispose() {
+    this.stop();
+    // Detach the Leaflet instance so no further coordinate conversion
+    // can run against a removed/unmounted map.
+    this.map = null;
   }
 }

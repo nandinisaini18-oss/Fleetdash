@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
-const ALERT_LIFETIME_MS = 5000;
+const ALERT_LIFETIME_MS = 8000;
+const ACTIVE_ALERTS_MAX = 3;
 
 export default function useGeofenceAlerts(socket) {
   const [alerts, setAlerts] = useState([]);
@@ -12,15 +13,13 @@ export default function useGeofenceAlerts(socket) {
   useEffect(() => {
     function onAlert(data) {
       if (!data || !data.alertId) return;
-
       setAlerts((prev) => {
         if (prev.some((a) => a.alertId === data.alertId)) return prev;
-        return [...prev, { ...data, receivedAt: Date.now() }];
+        const next = [...prev, { ...data, receivedAt: Date.now() }];
+        return next.slice(-ACTIVE_ALERTS_MAX);
       });
     }
-
     socket.on("geofence-alert", onAlert);
-
     return () => {
       socket.off("geofence-alert", onAlert);
     };
@@ -28,14 +27,12 @@ export default function useGeofenceAlerts(socket) {
 
   useEffect(() => {
     if (alerts.length === 0) return;
-
     const timer = setInterval(() => {
       setAlerts((prev) => {
         const now = Date.now();
         return prev.filter((a) => now - a.receivedAt < ALERT_LIFETIME_MS);
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [alerts.length]);
 

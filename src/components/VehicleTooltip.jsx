@@ -2,7 +2,6 @@ import { memo } from "react";
 
 function VehicleTooltip({ vehicle, telemetry }) {
   if (!vehicle || !telemetry) return null;
-
   const speed = telemetry.speed.toFixed(1);
   const heading = telemetry.heading.toFixed(0);
   const time = new Date(telemetry.timestamp).toLocaleTimeString([], {
@@ -31,10 +30,12 @@ function VehicleTooltip({ vehicle, telemetry }) {
           <span className="tooltip-value">{heading}°</span>
         </div>
         <div className="tooltip-row">
-          <span className="tooltip-label">Coords</span>
-          <span className="tooltip-value">
-            {telemetry.latitude.toFixed(5)}, {telemetry.longitude.toFixed(5)}
-          </span>
+          <span className="tooltip-label">Lat</span>
+          <span className="tooltip-value">{telemetry.latitude.toFixed(5)}</span>
+        </div>
+        <div className="tooltip-row">
+          <span className="tooltip-label">Lng</span>
+          <span className="tooltip-value">{telemetry.longitude.toFixed(5)}</span>
         </div>
         <div className="tooltip-row">
           <span className="tooltip-label">Updated</span>

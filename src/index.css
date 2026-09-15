@@ -1,33 +1,38 @@
 :root {
   --color-primary: #00FF41;
-  --color-primary-dim: rgba(0, 255, 65, 0.15);
-  --color-primary-border: rgba(0, 255, 65, 0.3);
+  --color-primary-dim: rgba(0, 255, 65, 0.12);
+  --color-primary-border: rgba(0, 255, 65, 0.25);
   --color-on-primary: #0D1117;
   --color-secondary: #008F11;
   --color-accent: #FF3333;
-  --color-accent-dim: rgba(255, 51, 51, 0.15);
+  --color-accent-dim: rgba(255, 51, 51, 0.12);
+  --color-warning: #F59E0B;
+  --color-warning-dim: rgba(245, 158, 11, 0.12);
   --color-active: #00FF41;
   --color-inactive: #6B7280;
   --color-maintenance: #F59E0B;
   --color-background: #0D1117;
   --color-surface: #161B22;
   --color-surface-raised: #1C2128;
+  --color-surface-overlay: rgba(22, 27, 34, 0.95);
   --color-foreground: #E6EDF3;
   --color-foreground-muted: #8B949E;
+  --color-foreground-subtle: #484F58;
   --color-border: #30363D;
   --color-border-subtle: #21262D;
 
   --font-body: "Fira Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "Fira Code", ui-monospace, Consolas, monospace;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
   --radius-lg: 8px;
 
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
 
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--color-foreground);
   background: var(--color-background);
@@ -35,9 +40,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -46,6 +49,7 @@
 body {
   margin: 0;
   overflow: hidden;
+  background: var(--color-background);
 }
 
 #root {
@@ -61,11 +65,24 @@ h1, h2, h3, h4 {
   color: var(--color-foreground);
 }
 
-ul {
-  list-style: none;
-}
+ul { list-style: none; }
 
 a {
   color: var(--color-primary);
   text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input {
+  font-family: inherit;
+  border: none;
+  background: none;
+  color: inherit;
 }
