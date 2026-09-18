@@ -1,8 +1,6 @@
 import Redis from "ioredis";
 
-const redisSubscriber = new Redis({
-    host: "127.0.0.1",
-    port: 6379,
+const redisSubscriber = new Redis(process.env.REDIS_URL, {
     retryStrategy: (times) => {
         const delay = Math.min(times * 200, 5000);
         return delay;

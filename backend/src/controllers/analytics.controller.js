@@ -192,6 +192,64 @@ export const getGeofenceAnalytics = async (
     }
 };
 
+// Recent geofence alerts for the Alert Management page.
+// Supports ?type=ENTRY|EXIT, ?date=YYYY-MM-DD and ?limit= (default 100, max 500).
+export const getAlertAnalytics = async (
+    req,
+    res,
+    next
+) => {
+
+    try {
+
+        const {
+            type,
+            date,
+            limit
+        } = req.query;
+
+        const filter = {};
+
+        if (type === "ENTRY" || type === "EXIT") {
+            filter.type = type;
+        }
+
+        if (typeof date === "string" && date.length > 0) {
+            const start = new Date(`${date}T00:00:00`);
+            if (!Number.isNaN(start.getTime())) {
+                const end = new Date(start);
+                end.setDate(end.getDate() + 1);
+                filter.timestamp = {
+                    $gte: start,
+                    $lt: end
+                };
+            }
+        }
+
+        const parsedLimit = parseInt(limit, 10);
+        const cappedLimit = Number.isFinite(parsedLimit)
+            ? Math.min(Math.max(parsedLimit, 1), 500)
+            : 100;
+
+        const alerts = await GeofenceAlert.find(filter)
+            .sort({ timestamp: -1 })
+            .limit(cappedLimit)
+            .populate("vehicleId", "registrationNumber vehicleId")
+            .populate("geofenceId", "name");
+
+        return res.status(200).json({
+            success: true,
+            count: alerts.length,
+            data: alerts
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+};
+
 export const getSystemHealth = async (req, res, next) => {
     try {
         const redisPublisher = (await import("../config/redis.js")).default;

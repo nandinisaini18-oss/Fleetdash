@@ -4,7 +4,8 @@ import {
     getOverviewAnalytics,
     getVehicleAnalytics,
     getTelemetryAnalytics,
-    getGeofenceAnalytics
+    getGeofenceAnalytics,
+    getAlertAnalytics
 } from "../controllers/analytics.controller.js";
 
 import { getSystemHealth } from "../controllers/analytics.controller.js";
@@ -29,6 +30,11 @@ router.get(
 router.get(
     "/geofences",
     getGeofenceAnalytics
+);
+
+router.get(
+    "/alerts",
+    getAlertAnalytics
 );
 
 router.get("/health", getSystemHealth);
