@@ -106,7 +106,14 @@ function FleetPanel({ vehicles, loading, error, selectedVehicleId, onSelectVehic
 
       {filtered.length === 0 ? (
         <div className="fleet-empty">
-          <span className="fleet-empty-icon">&#x1F69B;</span>
+          <span className="fleet-empty-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 8h13v8H1z" />
+              <path d="M14 11h4l3 3v2h-7z" />
+              <circle cx="6" cy="18" r="1.6" />
+              <circle cx="17" cy="18" r="1.6" />
+            </svg>
+          </span>
           <span className="fleet-empty-text">
             {search || filter !== "ALL" ? "No matching vehicles" : "No vehicles found"}
           </span>

@@ -1,13 +1,13 @@
 const GEOFENCE_COLORS = {
   active: {
-    fill: "rgba(0, 255, 65, 0.06)",
-    stroke: "rgba(0, 255, 65, 0.5)",
-    label: "rgba(0, 255, 65, 0.7)",
+    fill: "rgba(0, 255, 65, 0.1)",
+    stroke: "rgba(0, 255, 65, 0.75)",
+    label: "rgba(0, 255, 65, 0.85)",
   },
   inactive: {
-    fill: "rgba(107, 114, 128, 0.04)",
-    stroke: "rgba(107, 114, 128, 0.35)",
-    label: "rgba(107, 114, 128, 0.5)",
+    fill: "rgba(107, 114, 128, 0.07)",
+    stroke: "rgba(107, 114, 128, 0.5)",
+    label: "rgba(107, 114, 128, 0.65)",
   },
 };
 
@@ -45,8 +45,8 @@ export function drawGeofences(ctx, geofences, map) {
     ctx.fill();
 
     ctx.strokeStyle = colors.stroke;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 4]);
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([10, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
 

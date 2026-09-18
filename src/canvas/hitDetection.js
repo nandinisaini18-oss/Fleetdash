@@ -1,4 +1,6 @@
-const INTERACTION_RADIUS = 12;
+// Interaction radius sized for the vehicle icon (34px tall van image,
+// half-diagonal ~19px) rather than the old 7px dot.
+const INTERACTION_RADIUS = 18;
 const INTERACTION_RADIUS_SQ = INTERACTION_RADIUS * INTERACTION_RADIUS;
 
 export function findVehicleAtMouse(buffer, map, mouseX, mouseY) {

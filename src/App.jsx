@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import Header from "./components/Header";
-import StatsPanel from "./components/StatsPanel";
-import FleetPanel from "./components/FleetPanel";
-import LiveMap from "./components/LiveMap";
+import Sidebar from "./components/Sidebar";
+import ConnectionStatus from "./components/ConnectionStatus";
+import DashboardPage from "./pages/DashboardPage";
+import LiveMapPage from "./pages/LiveMapPage";
+import VehiclesPage from "./pages/VehiclesPage";
+import GeofencesPage from "./pages/GeofencesPage";
+import AlertsPage from "./pages/AlertsPage";
 import { getOverviewAnalytics, getVehicleAnalytics } from "./services/api";
 import useSocket from "./hooks/useSocket";
 import useTelemetryBuffer from "./hooks/useTelemetryBuffer";
@@ -10,7 +13,18 @@ import useGeofenceAlerts from "./hooks/useGeofenceAlerts";
 import useTelemetrySimulator from "./hooks/useTelemetrySimulator";
 import "./App.css";
 
+const PAGE_META = {
+  dashboard: { title: "Dashboard" },
+  map: { title: "Live Map" },
+  vehicles: { title: "Vehicles" },
+  geofences: { title: "Geofences" },
+  alerts: { title: "Alerts" },
+};
+
 function App() {
+  const [activePage, setActivePage] = useState("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState(null);
@@ -97,38 +111,96 @@ function App() {
     [selectedVehicleId]
   );
 
+  // View a vehicle from any page: select it and jump to the Live Map.
+  // LiveMap centers on change; buffer, canvas, and geofences are untouched.
+  const handleViewVehicle = useCallback((vehicleId) => {
+    if (!vehicleId) return;
+    setSelectedVehicleId(vehicleId);
+    setActivePage("map");
+  }, []);
+
   // Click alert to focus vehicle on map
   const handleAlertClick = useCallback(
     (alert) => {
       if (alert.vehicleId) {
-        handleSelectVehicle(alert.vehicleId);
+        handleViewVehicle(alert.vehicleId);
       }
     },
-    [handleSelectVehicle]
+    [handleViewVehicle]
   );
 
+  const handleNavigate = useCallback((page) => {
+    setActivePage(page);
+  }, []);
+
+  const pageMeta = PAGE_META[activePage] || PAGE_META.dashboard;
+
   return (
-    <div className="dashboard">
-      <Header overview={overview} socketConnected={isConnected} />
-      <StatsPanel overview={overview} loading={overviewLoading} error={overviewError} />
-      <div className="dashboard-body">
-        <FleetPanel
-          vehicles={vehicles}
-          loading={vehiclesLoading}
-          error={vehiclesError}
-          selectedVehicleId={selectedVehicleId}
-          onSelectVehicle={handleSelectVehicle}
-        />
-        <LiveMap
-          bufferRef={bufferRef}
-          vehicles={vehicles}
-          selectedVehicleId={selectedVehicleId}
-          onSelectVehicle={setSelectedVehicleId}
-          alerts={alerts}
-          onDismissAlert={dismissAlert}
-          alertHistory={alertHistory}
-          onAlertClick={handleAlertClick}
-        />
+    <div className="app-shell">
+      <Sidebar
+        activePage={activePage}
+        onNavigate={handleNavigate}
+        socketConnected={isConnected}
+        alertCount={alertHistory.length}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+      />
+      <div className="app-main">
+        <header className="topbar">
+          <h1 className="topbar-title">{pageMeta.title}</h1>
+          <div className="topbar-right">
+            <ConnectionStatus socketConnected={isConnected} />
+          </div>
+        </header>
+        <main className="app-content">
+          {activePage === "dashboard" && (
+            <DashboardPage
+              overview={overview}
+              overviewLoading={overviewLoading}
+              overviewError={overviewError}
+              vehicles={vehicles}
+              vehiclesLoading={vehiclesLoading}
+              vehiclesError={vehiclesError}
+              alertHistory={alertHistory}
+              socketConnected={isConnected}
+              onOpenMap={() => setActivePage("map")}
+              onViewVehicle={handleViewVehicle}
+            />
+          )}
+          {activePage === "map" && (
+            <LiveMapPage
+              bufferRef={bufferRef}
+              vehicles={vehicles}
+              vehiclesLoading={vehiclesLoading}
+              vehiclesError={vehiclesError}
+              selectedVehicleId={selectedVehicleId}
+              onSelectVehicle={handleSelectVehicle}
+              socketConnected={isConnected}
+            />
+          )}
+          {activePage === "vehicles" && (
+            <VehiclesPage
+              vehicles={vehicles}
+              loading={vehiclesLoading}
+              error={vehiclesError}
+              bufferRef={bufferRef}
+              onViewVehicle={handleViewVehicle}
+              onRefreshVehicles={fetchVehicles}
+            />
+          )}
+          {activePage === "geofences" && (
+            <GeofencesPage />
+          )}
+          {activePage === "alerts" && (
+            <AlertsPage
+              alerts={alerts}
+              alertHistory={alertHistory}
+              onDismissAlert={dismissAlert}
+              onAlertClick={handleAlertClick}
+              vehicles={vehicles}
+            />
+          )}
+        </main>
       </div>
     </div>
   );

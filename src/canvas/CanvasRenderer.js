@@ -1,6 +1,11 @@
 import { toCanvasCoords } from "./coordinateTransform";
-import { drawVehicles } from "./drawVehicles";
+import { drawVehicles, preloadVehicleIcon } from "./drawVehicles";
 import { drawGeofences } from "./drawGeofences";
+
+// Selection/hover ring radii sized to enclose the vehicle icon
+// (34px tall van image, half-diagonal ~19px) rather than the old 7px dot.
+const SELECTED_RING_RADIUS = 24;
+const HOVERED_RING_RADIUS = 20;
 
 export default class CanvasRenderer {
   constructor(canvas, bufferRef) {
@@ -16,6 +21,8 @@ export default class CanvasRenderer {
     this.hoveredVehicleId = null;
     this.selectedVehicleId = null;
     this.map = null;
+    // Start loading the vehicle icon early so the first frames can draw it.
+    preloadVehicleIcon();
   }
 
   setMap(map) {
@@ -38,9 +45,24 @@ export default class CanvasRenderer {
     if (!this.canvas || !this.canvas.parentElement) return;
     const rect = this.canvas.parentElement.getBoundingClientRect();
     if (!rect || rect.width < 2 || rect.height < 2) return;
-    this.width = Math.floor(rect.width);
-    this.height = Math.floor(rect.height);
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const nextWidth = Math.floor(rect.width);
+    const nextHeight = Math.floor(rect.height);
+    const nextDpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Idempotent: resetting canvas.width clears the bitmap. During a
+    // selection flyTo, Leaflet fires move/zoom on every animation frame, so
+    // an unconditional reset would blank vehicles/geofences for the whole
+    // flight. Only reset the backing store when the size actually changed;
+    // per-frame position sync is handled by the rAF render loop.
+    if (
+      nextWidth === this.width &&
+      nextHeight === this.height &&
+      nextDpr === this.dpr
+    ) {
+      return;
+    }
+    this.width = nextWidth;
+    this.height = nextHeight;
+    this.dpr = nextDpr;
     this.canvas.width = this.width * this.dpr;
     this.canvas.height = this.height * this.dpr;
     this.canvas.style.width = this.width + "px";
@@ -93,7 +115,7 @@ export default class CanvasRenderer {
     const { x, y } = toCanvasCoords(telemetry.latitude, telemetry.longitude, this.map);
 
     const isSelected = targetId === this.selectedVehicleId;
-    const ringRadius = isSelected ? 16 : 14;
+    const ringRadius = isSelected ? SELECTED_RING_RADIUS : HOVERED_RING_RADIUS;
 
     ctx.beginPath();
     ctx.arc(x, y, ringRadius, 0, Math.PI * 2);

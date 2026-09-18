@@ -6,7 +6,6 @@ import { findVehicleAtMouse } from "../canvas/hitDetection";
 import { getGeofences } from "../services/api";
 import VehicleTooltip from "./VehicleTooltip";
 import VehicleDetails from "./VehicleDetails";
-import AlertCenter from "./AlertCenter";
 
 const MemoizedTooltip = memo(VehicleTooltip);
 
@@ -35,10 +34,6 @@ function LiveMap({
   vehicles,
   selectedVehicleId,
   onSelectVehicle,
-  alerts,
-  onDismissAlert,
-  alertHistory,
-  onAlertClick,
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -53,7 +48,6 @@ function LiveMap({
   const selectedIdRef = useRef(null);
   const lastHoveredIdRef = useRef(null);
   const lastFlownIdRef = useRef(null);
-  const [showAlertHistory, setShowAlertHistory] = useState(false);
   const [selectedTelemetry, setSelectedTelemetry] = useState(null);
   const [detailStyle, setDetailStyle] = useState(null);
   const [mapVersion, setMapVersion] = useState(0);
@@ -473,30 +467,6 @@ function LiveMap({
       {geofenceError && (
         <div className="map-error-badge">Geofences: {geofenceError}</div>
       )}
-
-      {/* Alert center */}
-      <AlertCenter
-        alerts={alerts}
-        onDismiss={onDismissAlert}
-        alertHistory={alertHistory}
-        onAlertClick={onAlertClick}
-      />
-
-      {/* Alert history toggle */}
-      <div className="alert-history-toggle" onClick={(e) => e.stopPropagation()}>
-        <button
-          className="alert-history-btn"
-          onClick={() => setShowAlertHistory(!showAlertHistory)}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          {alertHistory.length > 0 && (
-            <span className="badge">{alertHistory.length}</span>
-          )}
-        </button>
-      </div>
 
       {/* Tooltip */}
       {showTooltip && (
