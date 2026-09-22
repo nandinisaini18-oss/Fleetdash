@@ -11,7 +11,6 @@ export const getOverviewAnalytics = async (
 ) => {
 
     try {
-
         const [
             totalVehicles,
             activeVehicles,
